@@ -1,0 +1,32 @@
+{
+  "DOC001": {
+    "document_id": "DOC001",
+    "original_filename": "p&id_example_2.png",
+    "upload_date": "2026-06-28T16:17:00.377097",
+    "file_path": "uploads\\DOC001.png",
+    "file_type": "png",
+    "file_size_bytes": 36840,
+    "entities": {
+      "named_equipment": [],
+      "instrument_tags": [
+        "FT-10",
+        "FT-11",
+        "FV-3-3040",
+        "FV-3-3041"
+      ],
+      "equipment_tags": [
+        "P-201"
+      ],
+      "pipe_lines": [],
+      "personnel_names": [],
+      "dates": [],
+      "process_parameters": [],
+      "regulatory_references": []
+    },
+    "chunk_count": 1,
+    "embedding_count": 1,
+    "text_path": "database/text/DOC001.txt",
+    "chunks_path": "database/chunks/DOC001.json",
+    "embeddings_path": "database/embeddings/DOC001.npy"
+  }
+}

@@ -1,0 +1,26 @@
+# Industrial Knowledge Intelligence Platform — Member 1 Dependencies
+# Install with:  pip install -r requirements.txt
+
+# PDF text extraction
+PyMuPDF>=1.23.0
+
+# OCR (scanned PDFs + images)
+paddleocr>=2.7.0
+paddlepaddle>=2.5.0        # CPU version; use paddlepaddle-gpu for GPU
+
+# OpenCV (used internally by PaddleOCR image pipeline)
+opencv-python>=4.8.0
+
+# Excel parsing
+pandas>=2.0.0
+openpyxl>=3.1.0            # xlsx engine for pandas
+
+# LangChain text splitter
+langchain>=0.1.0
+langchain-community>=0.0.1
+
+# Sentence embeddings (local model, no API key)
+sentence-transformers>=2.6.0
+
+# NumPy (embeddings storage)
+numpy>=1.24.0
