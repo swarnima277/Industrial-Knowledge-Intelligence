@@ -28,5 +28,41 @@
     "text_path": "database/text/DOC001.txt",
     "chunks_path": "database/chunks/DOC001.json",
     "embeddings_path": "database/embeddings/DOC001.npy"
+  },
+  "DOC002": {
+    "document_id": "DOC002",
+    "original_filename": "test_pdf_2.pdf",
+    "upload_date": "2026-06-29T14:21:39.982142",
+    "file_path": "uploads\\DOC002.pdf",
+    "file_type": "pdf",
+    "file_size_bytes": 170694,
+    "entities": {
+      "named_equipment": [],
+      "instrument_tags": [
+        "FT-201"
+      ],
+      "equipment_tags": [
+        "P-101"
+      ],
+      "pipe_lines": [],
+      "personnel_names": [
+        "John Smith"
+      ],
+      "dates": [
+        "15/03/2025"
+      ],
+      "process_parameters": [
+        "120 \u00b0C",
+        "5 bar"
+      ],
+      "regulatory_references": [
+        "ISO 9001"
+      ]
+    },
+    "chunk_count": 1,
+    "embedding_count": 1,
+    "text_path": "database/text/DOC002.txt",
+    "chunks_path": "database/chunks/DOC002.json",
+    "embeddings_path": "database/embeddings/DOC002.npy"
   }
 }

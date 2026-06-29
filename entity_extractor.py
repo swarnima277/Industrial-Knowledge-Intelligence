@@ -98,7 +98,13 @@ _PERSON_BLOCKLIST = {
     "Safety", "Relief", "Check", "Gate", "Ball", "Butterfly",
     "Charge", "Transfer", "Indicating", "Checked", "Processing", "Firewater",
     "Discharge", "Circulation", "Centrifugal", "Reciprocating", "Instrument",
-    "Supply", "Sample", "Point", "Air",
+    "Supply", "Sample", "Point", "Air", "Flow", "Meter", "Date", "Inspection"
+}
+
+PERSON_STOPWORDS = {
+    "Inspection Date",
+    "Sample Point",
+    "Instrument Air Supply",
 }
 
 
@@ -242,12 +248,18 @@ class EntityExtractor:
             if len(words) < 2:
                 continue
 
+    # Remove known non-person phrases
+            if p in PERSON_STOPWORDS:
+                continue
+
+    # Remove phrases containing blocked words
             if any(word in _PERSON_BLOCKLIST for word in words):
                 continue
 
             personnel.append(p)
 
         personnel = sorted(set(personnel))
+
 
     # ==========================================================
     # OTHER ENTITIES

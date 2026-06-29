@@ -1,0 +1,9 @@
+[
+  {
+    "chunk_id": "DOC002_chunk_000",
+    "doc_id": "DOC002",
+    "chunk_index": 0,
+    "text": "--- Page 1 ---\nOperator: John Smith \nPump: P-101 \nFlow Meter: FT-201 \nPressure: 5 bar \nTemperature: 120 \u00b0C \nInspection Date: 15/03/2025 \nStandard: ISO 9001",
+    "char_count": 155
+  }
+]
