@@ -87,18 +87,59 @@ _RE_PERSON = re.compile(
 )
 
 _PERSON_BLOCKLIST = {
-    "Tank", "Vessel", "Drum", "Column", "Tower", "Reactor", "Separator",
-    "Exchanger", "Condenser", "Evaporator", "Cooler", "Heater", "Furnace",
-    "Boiler", "Compressor", "Turbine", "Pump", "Blower", "Fan", "Filter",
-    "Strainer", "Scrubber", "Absorber", "Stripper", "Mixer", "Agitator",
-    "Valve", "Reboiler", "Ejector", "Flare", "Feeder", "Conveyor", "Dryer",
-    # descriptor words common in P&ID labels
-    "Controller", "Transmitter", "Indicator", "Recorder", "List",
-    "Control", "Storage", "Feed", "Flow", "Level", "Pressure", "Temperature",
-    "Safety", "Relief", "Check", "Gate", "Ball", "Butterfly",
-    "Charge", "Transfer", "Indicating", "Checked", "Processing", "Firewater",
-    "Discharge", "Circulation", "Centrifugal", "Reciprocating", "Instrument",
-    "Supply", "Sample", "Point", "Air", "Flow", "Meter", "Date", "Inspection"
+    # Equipment / process terms
+    "Pipeline", "Line", "Header", "Nozzle", "Vent", "Drain",
+    "Stack", "Chimney", "Manifold", "Skid", "Package",
+    "Hopper", "Silo", "Bin", "Crusher", "Mill",
+    "Conveyor", "Elevator", "Feeder", "Dispenser",
+
+    # Instrumentation terms
+    "Analyzer", "Sensor", "Switch", "Gauge",
+    "Detector", "Alarm", "Monitor", "Relay",
+    "Actuator", "Positioner", "Solenoid",
+    "Thermocouple", "Flowmeter", "Rotameter",
+
+    # Control-system terms
+    "Control Room", "Distributed", "System",
+    "Logic", "Interlock", "Shutdown",
+    "Emergency", "Trip", "Override",
+    "Setpoint", "Signal", "Output", "Input",
+
+    # Maintenance terms
+    "Operator", "Technician", "Supervisor",
+    "Maintenance", "Inspection", "Calibration",
+    "Commissioning", "Startup", "Shutdown",
+    "Overhaul", "Testing", "Verification",
+
+    # Common document labels
+    "Description", "Remarks", "Comment",
+    "Reference", "Revision", "Document",
+    "Drawing", "Project", "Department",
+    "Section", "Category", "Status",
+
+    # Process words
+    "Steam", "Water", "Nitrogen", "Hydrogen",
+    "Oxygen", "Air", "Gas", "Liquid",
+    "Fuel", "Chemical", "Product", "Feed",
+    "Effluent", "Waste", "Condensate",
+
+    # Excel-specific nuisance words
+    "Equipment", "Instrument", "Tag",
+    "Standard", "Location", "Parameter",
+    "Specification", "Asset",
+    "Measured", "Value", "Unit", "Reading",
+
+    # Common false positives
+    "Sample", "Sampling",
+    "Instrument", "Instrumentation",
+    "Control", "Process",
+    "Inspection", "Date",
+    "Flow", "Meter",
+    "Pressure", "Gauge",
+    "Temperature", "Sensor",
+    "Level", "Indicator",
+    "Pump", "Station",
+    "Air", "Supply"
 }
 
 PERSON_STOPWORDS = {
