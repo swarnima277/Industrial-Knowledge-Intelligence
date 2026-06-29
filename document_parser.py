@@ -142,11 +142,22 @@ class DocumentParser:
 
             # Each row as a readable sentence
             for _, row in df.iterrows():
-                row_text = ", ".join(
-                    f"{col}: {val}" for col, val in row.items() if str(val).strip()
-                )
-                if row_text:
-                    text_parts.append(row_text)
+
+                row_parts = []
+
+                for col, val in row.items():
+                    if str(val).strip():
+                        row_parts.append(f"{col}: {val}")
+
+                # Combine Reading + Unit into a natural engineering value
+                if "Reading" in row and "Unit" in row:
+                    reading = str(row["Reading"]).strip()
+                    unit = str(row["Unit"]).strip()
+
+                    if reading and unit:
+                        row_parts.append(f"Measured Value: {reading} {unit}")
+
+                text_parts.append(", ".join(row_parts))
 
         return "\n".join(text_parts)
 
