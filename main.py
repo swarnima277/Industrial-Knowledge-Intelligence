@@ -117,20 +117,27 @@ def inspect_document(doc_id: str):
     if entities:
         print("\n  --- Extracted Entities ---")
         labels = {
-    "named_equipment":       "Named Equipment",
-    "instrument_tags":       "Instrument Tags",
-    "equipment_tags":        "Equipment Tags",
-    "pipe_lines":            "Pipe Lines",
-    "personnel_names":       "Personnel",
-    "dates":                 "Dates",
-    "process_parameters":    "Process Parameters",
-    "regulatory_references": "Regulatory References",
-    }
+            "named_equipment":       "Named Equipment",
+            "instrument_tags":       "Instrument Tags",
+            "equipment_tags":        "Equipment Tags",
+            "pipe_lines":            "Pipe Lines",
+            "personnel_names":       "Personnel",
+            "dates":                 "Dates",
+            "process_parameters":    "Process Parameters",
+            "regulatory_references": "Regulatory References",
+        }
         for key, label in labels.items():
             items = [str(x).replace("\n", " ") for x in entities.get(key, [])]
             if items:
                 print(f"  {label}: {', '.join(items[:5])}" +
                       (" …" if len(items) > 5 else ""))
+
+        # ADD THIS: Display the structural relationships stored in the database
+        relationships = entities.get("relationships", [])
+        if relationships:
+            print("\n  --- Extracted Relationships ---")
+            for rel in relationships:
+                print(f"  ({rel.get('source_tag')}) -[{rel.get('relationship_type')}]-> ({rel.get('target_parameter')})")
 
     print(f"{'='*50}\n")
 
