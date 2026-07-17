@@ -1,0 +1,1 @@
+export default function Sidebar(){const items=['Dashboard','Upload','AI Chat','Knowledge Graph','Compliance','Analytics','Maintenance'];return <div style={{width:220,minHeight:'100vh',background:'#0f172a',color:'white',padding:20}}>{items.map(i=><p key={i}>{i}</p>)}</div>}

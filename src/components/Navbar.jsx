@@ -1,0 +1,1 @@
+export default function Navbar(){return <div style={{padding:16,background:'#1e293b',color:'white'}}>EPC Project Intelligence</div>}

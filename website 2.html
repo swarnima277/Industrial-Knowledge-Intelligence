@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPIC · AI EPC Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #f4f7fc; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .card-hover { transition: all 0.2s ease; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.05); }
+        .graph-node {
+            background: white; border-radius: 12px; padding: 8px 14px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.04); border: 1px solid #e9edf4;
+            font-size: 0.75rem; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+            transition: all 0.2s; cursor: pointer;
+            animation: fadeIn 0.3s ease;
+        }
+        .graph-node:hover { transform: scale(1.05); border-color: #3b82f6; box-shadow: 0 8px 16px rgba(0,0,0,0.08); }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .chat-bubble {
+            background: #eef3fa; border-radius: 16px 16px 16px 4px;
+            padding: 10px 14px; max-width: 85%; margin-bottom: 6px;
+            animation: slideIn 0.3s ease;
+        }
+        .chat-bubble.user {
+            background: #2563eb; color: white; border-radius: 16px 16px 4px 16px;
+            margin-left: auto;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.2s; }
+        .upload-zone.dragover { border-color: #2563eb; background: #eff6ff; }
+        #fileList .file-item { background: #f8fafc; border-radius: 8px; padding: 6px 12px; margin-top: 6px; display: flex; justify-content: space-between; align-items: center; animation: fadeIn 0.3s ease; }
+        #fileList .file-item .status { font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; }
+        .status.uploaded { background: #dcfce7; color: #166534; }
+        .status.processing { background: #fef9c3; color: #854d0e; }
+        .status.ocr { background: #dbeafe; color: #1e40af; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+        #chatMessages { scroll-behavior: smooth; max-height: 200px; overflow-y: auto; }
+        .typing-indicator { display: inline-block; background: #eef3fa; border-radius: 16px; padding: 10px 14px; margin-bottom: 6px; }
+        .typing-indicator span { display: inline-block; width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; margin: 0 2px; animation: typing 1.2s infinite; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+        #graphContainer { min-height: 180px; transition: all 0.3s; }
+        .nav-item { cursor: pointer; transition: all 0.2s; }
+        .nav-item:hover { background: #f1f5f9; }
+        .nav-item.active { background: #eff6ff; color: #2563eb; font-weight: 600; }
+        .page-content { display: none; animation: fadeIn 0.3s ease; }
+        .page-content.active { display: block; }
+        .login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .login-modal { background: white; border-radius: 24px; padding: 40px; max-width: 400px; width: 90%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #7c3aed); display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: 600; }
+        .stat-number { transition: all 0.3s; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; font-size: 0.9rem; box-shadow: 0 8px 24px rgba(0,0,0,0.2); animation: slideUp 0.3s ease; z-index: 999; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- LOGIN OVERLAY -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-modal">
+            <div class="text-center mb-6">
+                <span class="text-3xl font-bold text-slate-800">⚡ EPIC</span>
+                <p class="text-sm text-slate-500 mt-1">AI-powered EPC Intelligence</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    <input type="email" id="loginEmail" value="admin@epic.ai" class="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-200 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input type="password" id="loginPassword" value="password123" class="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-200 outline-none">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition">Sign In</button>
+                <p class="text-xs text-slate-400 text-center mt-2">Demo credentials pre-filled</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="mainApp" style="display:none;" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- HEADER -->
+        <header class="flex flex-wrap items-center justify-between pb-4 border-b border-slate-200">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl font-semibold tracking-tight text-slate-800">⚡ EPIC</span>
+                <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">AI · Data Centre</span>
+            </div>
+            <div class="flex items-center space-x-4 text-sm">
+                <span class="hidden md:inline-flex items-center text-slate-500"><i class="far fa-bell mr-1.5"></i> <span id="notifCount">4</span></span>
+                <div class="flex items-center space-x-2 cursor-pointer" onclick="navigateTo('profile')">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">JD</div>
+                    <span class="hidden sm:inline text-slate-700 font-medium">John Doe</span>
+                </div>
+                <button id="logoutBtn" class="text-slate-400 hover:text-slate-600 text-sm"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
+
+        <!-- NAVIGATION -->
+        <nav class="flex flex-wrap gap-1 py-4 text-sm font-medium text-slate-600 border-b border-slate-200" id="mainNav">
+            <a class="nav-item active px-3 py-1.5 rounded-full flex items-center" data-page="home" onclick="navigateTo('home')"><i class="fas fa-home mr-2"></i> Home</a>
+            <a class="nav-item px-3 py-1.5 rounded-full flex items-center" data-page="dashboard" onclick="navigateTo('dashboard')"><i class="fas fa-th-large mr-2"></i> Dashboard</a>
+            <a class="nav-item px-3 py-1.5 rounded-full flex items-center" data-page="upload" onclick="navigateTo('upload')"><i class="fas fa-upload mr-2"></i> Upload</a>
+            <a class="nav-item px-3 py-1.5 rounded-full flex items-center" data-page="knowledge" onclick="navigateTo('knowledge')"><i class="fas fa-project-diagram mr-2"></i> Knowledge Graph</a>
+            <a class="nav-item px-3 py-1.5 rounded-full flex items-center" data-page="assistant" onclick="navigateTo('assistant')"><i class="fas fa-robot mr-2"></i> AI Assistant</a>
+            <a class="nav-item px-3 py-1.5 rounded-full flex items-center" data-page="analytics" onclick="navigateTo('analytics')"><i class="fas fa-chart-line mr-2"></i> Analytics</a>
+            <a class="nav-item px-3 py-1.5 rounded-full flex items-center" data-page="maintenance" onclick="navigateTo('maintenance')"><i class="fas fa-tools mr-2"></i> Maintenance</a>
+            <a class="nav-item px-3 py-1.5 rounded-full flex items-center" data-page="compliance" onclick="navigateTo('compliance')"><i class="fas fa-check-double mr-2"></i> Compliance</a>
+            <a class="nav-item px-3 py-1.5 rounded-full flex items-center" data-page="settings" onclick="navigateTo('settings')"><i class="fas fa-cog mr-2"></i> Settings</a>
+            <a class="nav-item px-3 py-1.5 rounded-full flex items-center" data-page="profile" onclick="navigateTo('profile')"><i class="fas fa-user mr-2"></i> Profile</a>
+        </nav>
+
+        <!-- PAGE: HOME -->
+        <div id="page-home" class="page-content active mt-6">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white">
+                <h1 class="text-3xl font-bold mb-2">Welcome to EPIC</h1>
+                <p class="text-blue-100 mb-4">AI-powered EPC Project Intelligence for data centre construction</p>
+                <div class="flex flex-wrap gap-4">
+                    <span class="bg-white/20 backdrop-blur px-4 py-2 rounded-full text-sm"><i class="fas fa-check-circle mr-2"></i> <span id="homeDocCount">342</span> documents indexed</span>
+                    <span class="bg-white/20 backdrop-blur px-4 py-2 rounded-full text-sm"><i class="fas fa-robot mr-2"></i> AI assistant online</span>
+                    <span class="bg-white/20 backdrop-blur px-4 py-2 rounded-full text-sm"><i class="fas fa-chart-line mr-2"></i> <span id="homeHealth">94%</span> schedule health</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 card-hover cursor-pointer" onclick="navigateTo('upload')">
+                    <i class="fas fa-upload text-2xl text-blue-500 mb-3"></i>
+                    <h3 class="font-semibold">Quick Upload</h3>
+                    <p class="text-sm text-slate-500">Drag & drop documents for AI processing</p>
+                    <span class="mt-3 inline-block text-sm text-blue-600 font-medium">Upload now →</span>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 card-hover cursor-pointer" onclick="navigateTo('assistant')">
+                    <i class="fas fa-comment-dots text-2xl text-indigo-500 mb-3"></i>
+                    <h3 class="font-semibold">AI Assistant</h3>
+                    <p class="text-sm text-slate-500">Ask about schedule, compliance, procurement</p>
+                    <span class="mt-3 inline-block text-sm text-blue-600 font-medium">Open chat →</span>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 card-hover cursor-pointer" onclick="navigateTo('knowledge')">
+                    <i class="fas fa-project-diagram text-2xl text-purple-500 mb-3"></i>
+                    <h3 class="font-semibold">Knowledge Graph</h3>
+                    <p class="text-sm text-slate-500">Visualize project relationships</p>
+                    <span class="mt-3 inline-block text-sm text-blue-600 font-medium">Explore →</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: DASHBOARD -->
+        <div id="page-dashboard" class="page-content mt-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 card-hover">
+                    <div class="flex justify-between"><span class="text-slate-500 text-sm">Schedule Health</span><i class="fas fa-calendar-alt text-blue-400"></i></div>
+                    <div class="text-2xl font-bold mt-1 stat-number" id="scheduleHealth">84%</div>
+                    <div class="text-xs text-emerald-600 mt-1"><i class="fas fa-arrow-up mr-0.5"></i> +2.1%</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 card-hover">
+                    <div class="flex justify-between"><span class="text-slate-500 text-sm">Open Actions</span><i class="fas fa-tasks text-amber-400"></i></div>
+                    <div class="text-2xl font-bold mt-1 stat-number" id="openActions">23</div>
+                    <div class="text-xs text-amber-600 mt-1"><i class="fas fa-exclamation-circle mr-0.5"></i> <span id="overdueCount">8</span> overdue</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 card-hover">
+                    <div class="flex justify-between"><span class="text-slate-500 text-sm">Compliance</span><i class="fas fa-shield-alt text-green-400"></i></div>
+                    <div class="text-2xl font-bold mt-1 stat-number" id="complianceRate">97%</div>
+                    <div class="text-xs text-green-600 mt-1">all checks passed</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 card-hover">
+                    <div class="flex justify-between"><span class="text-slate-500 text-sm">Documents</span><i class="fas fa-file-pdf text-red-400"></i></div>
+                    <div class="text-2xl font-bold mt-1 stat-number" id="docCount">342</div>
+                    <div class="text-xs text-slate-500 mt-1">+<span id="docDelta">12</span> this week</div>
+                </div>
+            </div>
+            <div class="mt-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-semibold text-slate-700"><i class="fas fa-chart-simple mr-2 text-blue-500"></i>Project Progress</h3>
+                    <span class="text-xs text-slate-400 bg-slate-50 px-3 py-1 rounded-full">Last 6 weeks</span>
+                </div>
+                <canvas id="progressChart" height="100" class="w-full h-auto"></canvas>
+            </div>
+        </div>
+
+        <!-- PAGE: UPLOAD -->
+        <div id="page-upload" class="page-content mt-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-2xl mx-auto">
+                <h3 class="font-semibold text-slate-700 mb-4"><i class="fas fa-upload mr-2 text-blue-500"></i>Upload Documents</h3>
+                <div id="uploadZone" class="upload-zone rounded-xl p-8 text-center hover:bg-slate-50 transition cursor-pointer">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-slate-400 mb-3"></i>
+                    <p class="text-sm font-medium text-slate-600">Drag & drop or click to browse</p>
+                    <p class="text-xs text-slate-400">PDF, DWG, DOCX, XLSX, PNG, JPG up to 50MB</p>
+                    <input type="file" id="fileInput" multiple class="hidden" accept=".pdf,.dwg,.docx,.xlsx,.png,.jpg,.txt">
+                    <button id="uploadBtn" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-blue-700 transition">Browse Files</button>
+                </div>
+                <div id="fileList" class="mt-4 space-y-1 text-xs max-h-60 overflow-y-auto"></div>
+                <div id="ocrStatus" class="mt-2 text-xs text-slate-400 hidden"><i class="fas fa-spinner fa-spin mr-1"></i> OCR processing...</div>
+            </div>
+        </div>
+
+        <!-- PAGE: KNOWLEDGE GRAPH -->
+        <div id="page-knowledge" class="page-content mt-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold text-slate-700"><i class="fas fa-project-diagram mr-2 text-purple-500"></i>Knowledge Graph <span id="graphNodeCount" class="text-xs font-normal text-slate-400">· 9 nodes</span></h3>
+                    <button id="addGraphNodeBtn" class="text-xs bg-purple-50 text-purple-600 px-3 py-1 rounded-full hover:bg-purple-100 transition"><i class="fas fa-plus mr-1"></i>Add Node</button>
+                </div>
+                <div id="graphContainer" class="bg-slate-50 rounded-xl p-4 flex flex-wrap items-center justify-center gap-2 min-h-[200px] border border-dashed border-slate-300 transition"></div>
+                <div class="flex flex-wrap gap-2 mt-3 text-xs text-slate-500">
+                    <span><i class="fas fa-circle text-blue-400"></i> Spec</span>
+                    <span><i class="fas fa-circle text-amber-400"></i> Equipment</span>
+                    <span><i class="fas fa-circle text-emerald-400"></i> Compliance</span>
+                    <span><i class="fas fa-circle text-purple-400"></i> Schedule</span>
+                    <span id="graphStatus" class="text-emerald-600 ml-auto">✓ live</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: AI ASSISTANT -->
+        <div id="page-assistant" class="page-content mt-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-3xl mx-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-slate-700"><i class="fas fa-robot mr-2 text-indigo-400"></i>AI Assistant</h3>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full" id="chatStatus2">● online</span>
+                </div>
+                <div id="chatMessages" class="bg-soft-blue p-4 rounded-xl text-sm space-y-1 min-h-[200px] max-h-[300px] overflow-y-auto">
+                    <div class="chat-bubble"><strong>EPC AI:</strong> I see a potential delay in MEP procurement. Review RFQ #204.</div>
+                    <div class="chat-bubble"><strong>EPC AI:</strong> How can I assist you today?</div>
+                </div>
+                <div class="flex items-center gap-2 mt-3">
+                    <input id="chatInput2" type="text" placeholder="Ask about schedule, compliance, procurement..." class="flex-1 rounded-full border border-slate-200 px-4 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none">
+                    <button id="sendChatBtn2" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full w-10 h-10 flex items-center justify-center transition"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: ANALYTICS -->
+        <div id="page-analytics" class="page-content mt-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center card-hover">
+                    <div class="text-3xl font-bold text-blue-600 stat-number" id="analyticsRfi">12</div>
+                    <p class="text-sm text-slate-500">RFIs</p>
+                    <div class="mt-2 h-1 w-full bg-slate-100 rounded-full"><div class="h-1 bg-blue-500 rounded-full transition-all" style="width:65%"></div></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center card-hover">
+                    <div class="text-3xl font-bold text-amber-600 stat-number" id="analyticsChanges">8</div>
+                    <p class="text-sm text-slate-500">Change Orders</p>
+                    <div class="mt-2 h-1 w-full bg-slate-100 rounded-full"><div class="h-1 bg-amber-500 rounded-full transition-all" style="width:40%"></div></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center card-hover">
+                    <div class="text-3xl font-bold text-emerald-600 stat-number" id="analyticsOntime">94%</div>
+                    <p class="text-sm text-slate-500">On-time Delivery</p>
+                    <div class="mt-2 h-1 w-full bg-slate-100 rounded-full"><div class="h-1 bg-emerald-500 rounded-full transition-all" style="width:94%"></div></div>
+                </div>
+            </div>
+            <div class="mt-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h4 class="font-semibold text-slate-700 mb-3">Weekly Activity</h4>
+                <div class="h-32 flex items-end gap-2">
+                    <div class="flex-1 bg-blue-200 rounded-t-lg transition-all hover:bg-blue-300" style="height:60%"></div>
+                    <div class="flex-1 bg-blue-300 rounded-t-lg transition-all hover:bg-blue-400" style="height:80%"></div>
+                    <div class="flex-1 bg-blue-400 rounded-t-lg transition-all hover:bg-blue-500" style="height:45%"></div>
+                    <div class="flex-1 bg-blue-500 rounded-t-lg transition-all hover:bg-blue-600" style="height:70%"></div>
+                    <div class="flex-1 bg-blue-600 rounded-t-lg transition-all hover:bg-blue-700" style="height:90%"></div>
+                    <div class="flex-1 bg-blue-400 rounded-t-lg transition-all hover:bg-blue-500" style="height:55%"></div>
+                    <div class="flex-1 bg-blue-300 rounded-t-lg transition-all hover:bg-blue-400" style="height:75%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-slate-400 mt-1">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: MAINTENANCE -->
+        <div id="page-maintenance" class="page-content mt-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="font-semibold text-slate-700 mb-4"><i class="fas fa-tools mr-2 text-amber-500"></i>Maintenance Tasks</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <div><i class="fas fa-snowflake text-blue-400 mr-2"></i> Chiller #2</div>
+                        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">overdue</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <div><i class="fas fa-bolt text-yellow-400 mr-2"></i> UPS Battery</div>
+                        <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">scheduled</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <div><i class="fas fa-wind text-cyan-400 mr-2"></i> AHU filter</div>
+                        <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">completed</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <div><i class="fas fa-server text-slate-400 mr-2"></i> Rack cooling</div>
+                        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">pending</span>
+                    </div>
+                </div>
+                <button class="mt-4 text-sm text-blue-600 font-medium hover:underline" onclick="showToast('Loading all maintenance tasks...')">View all tasks →</button>
+            </div>
+        </div>
+
+        <!-- PAGE: COMPLIANCE -->
+        <div id="page-compliance" class="page-content mt-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="font-semibold text-slate-700 mb-4"><i class="fas fa-check-double mr-2 text-emerald-500"></i>Compliance Dashboard</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <div><i class="fas fa-check-circle text-emerald-500 mr-2"></i> ISO 9001:2015</div>
+                        <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">passed</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <div><i class="fas fa-check-circle text-emerald-500 mr-2"></i> NEC 2023</div>
+                        <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">passed</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <div><i class="fas fa-exclamation-triangle text-amber-400 mr-2"></i> LEED v4</div>
+                        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">pending</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <div><i class="fas fa-check-circle text-emerald-500 mr-2"></i> OSHA Standards</div>
+                        <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">passed</span>
+                    </div>
+                </div>
+                <button class="mt-4 text-sm text-blue-600 font-medium hover:underline" onclick="showToast('Running compliance audit...')">Run full audit →</button>
+            </div>
+        </div>
+
+        <!-- PAGE: SETTINGS -->
+        <div id="page-settings" class="page-content mt-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-2xl mx-auto">
+                <h3 class="font-semibold text-slate-700 mb-4"><i class="fas fa-cog mr-2 text-slate-500"></i>Settings</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <span>AI Assistant</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer" onchange="showToast('AI Assistant ' + (this.checked ? 'enabled' : 'disabled'))">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-blue-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <span>Auto-sync documents</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer" onchange="showToast('Auto-sync ' + (this.checked ? 'enabled' : 'disabled'))">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-blue-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <span>Email notifications</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" onchange="showToast('Email notifications ' + (this.checked ? 'enabled' : 'disabled'))">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-blue-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+                        <span>Dark mode</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" onchange="showToast('Dark mode ' + (this.checked ? 'enabled' : 'disabled'))">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-blue-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[
