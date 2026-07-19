@@ -1,0 +1,23 @@
+{
+  "equipment": {
+    "id": "P201",
+    "name": "Boiler Pump",
+    "status": "Running"
+  },
+  "engineer": {
+    "id": "E101",
+    "name": "Rahul Sharma"
+  },
+  "location": {
+    "id": "L01",
+    "name": "Boiler Room"
+  },
+  "issue": {
+    "id": "I501",
+    "name": "Leakage"
+  },
+  "manual": {
+    "id": "M101",
+    "name": "Boiler Pump Manual.pdf"
+  }
+}
