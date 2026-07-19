@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial Copilot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #0096C7;
+            --primary-dark: #027EA8;
+            --primary-darker: #015E7E;
+            --primary-soft: rgba(0,150,199,0.08);
+            --primary-soft-strong: rgba(0,150,199,0.16);
+            --bg: #F5FAFC;
+            --panel: #FFFFFF;
+            --border: #DCEEF5;
+            --border-strong: #C3E2ED;
+            --text: #0F2A36;
+            --text-muted: #547886;
+            --text-faint: #94B1BC;
+            --danger: #D6544D;
+            --danger-soft: rgba(214,84,77,0.08);
+            --success: #12946B;
+            --success-soft: rgba(18,148,107,0.08);
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        h1, h2, h3, .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; }
+        .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
+        .text-muted { color: var(--text-muted); }
+        .text-faint { color: var(--text-faint); }
+
+        .btn-primary {
+            background: var(--primary); color: #fff; border-radius: 10px; padding: 9px 18px;
+            font-size: 0.875rem; font-weight: 600; border: none; cursor: pointer; transition: background .15s;
+        }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-ghost {
+            background: var(--panel); color: var(--text-muted); border: 1px solid var(--border-strong);
+            border-radius: 10px; padding: 9px 16px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all .15s;
+        }
+        .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+        .chip {
+            display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 600;
+            padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-strong);
+            background: var(--panel); color: var(--text-muted); cursor: pointer; transition: all .15s;
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+        }
+        .chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+        .chip.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+
+        .list-row { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: all .15s; }
+        .list-row:hover { border-color: var(--primary); background: var(--primary-soft); }
+        .list-row.active { border-color: var(--primary); background: var(--primary-soft-strong); }
+
+        .empty-state { border: 1.5px dashed var(--border-strong); border-radius: 14px; padding: 40px 20px; text-align: center; color: var(--text-faint); }
+
+        /* ---------- Sidebar ---------- */
+        .sidebar { background: var(--primary); width: 232px; flex-shrink: 0; }
+        .sidebar-link {
+            display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 10px;
+            font-size: 0.875rem; font-weight: 500; color: rgba(255,255,255,0.82); cursor: pointer; transition: all .15s;
+        }
+        .sidebar-link i { width: 18px; text-align: center; }
+        .sidebar-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .sidebar-link.active { background: #fff; color: var(--primary); font-weight: 600; }
+
+        /* ---------- Pages ---------- */
+        .page { display: none; }
+        .page.visible { display: block; }
+
+        /* ---------- Chat ---------- */
+        .chat-bubble { background: var(--primary-soft); border-radius: 14px 14px 14px 4px; padding: 10px 14px; max-width: 85%; margin-bottom: 8px; border: 1px solid var(--border); }
+        .chat-bubble.user { background: var(--primary); color: #fff; border: none; border-radius: 14px 14px 4px 14px; margin-left: auto; }
+        .chat-bubble.error { background: var(--danger-soft); color: var(--danger); border-color: rgba(214,84,77,0.25); }
+        .typing-indicator { display: inline-block; background: var(--primary-soft); border-radius: 14px; padding: 10px 14px; margin-bottom: 8px; border: 1px solid var(--border); }
+        .typing-indicator span { display: inline-block; width: 6px; height: 6px; background: var(--text-faint); border-radius: 50%; margin: 0 2px; animation: typing 1.2s infinite; }
+        .typing-indicator span:nth-child(2) { animation-delay: .2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: .4s; }
+        @keyframes typing { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+        /* ---------- Upload ---------- */
+        .upload-zone { border: 2px dashed var(--border-strong); transition: all .2s; }
+        .upload-zone.dragover { border-color: var(--primary); background: var(--primary-soft); }
+        #fileList .file-item { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .status { font-size: 0.7rem; padding: 2px 10px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; }
+        .status.uploaded { background: var(--success-soft); color: var(--success); }
+        .status.processing { background: var(--primary-soft-strong); color: var(--primary); }
+        .status.error { background: var(--danger-soft); color: var(--danger); }
+
+        #chartWrapper { position: relative; height: 260px; width: 100%; }
+
+        /* ---------- Auth ---------- */
+        #authOverlay { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+        .auth-card { width: 100%; max-width: 380px; }
+        .auth-tab { flex: 1; text-align: center; padding: 10px 0; font-size: 0.85rem; font-weight: 600; color: var(--text-faint); cursor: pointer; border-bottom: 2px solid var(--border); transition: all .15s; }
+        .auth-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .auth-input { width: 100%; background: var(--bg); border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 14px; font-size: 0.875rem; color: var(--text); outline: none; transition: border-color .15s; }
+        .auth-input:focus { border-color: var(--primary); }
+        .auth-input::placeholder { color: var(--text-faint); }
+        .auth-error { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(214,84,77,0.25); border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; display: none; }
+        .auth-error.show { display: block; }
+        .auth-success { background: var(--success-soft); color: var(--success); border: 1px solid rgba(18,148,107,0.25); border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; display: none; }
+        .auth-success.show { display: block; }
+    </style>
+</head>
+<body>
+
+<!-- ============ AUTH OVERLAY ============ -->
+<div id="authOverlay">
+    <div class="auth-card">
+        <div class="text-center mb-6">
+            <div class="flex items-center justify-center gap-2">
+                <i class="fas fa-diagram-project text-2xl" style="color:var(--primary)"></i>
+                <span class="text-2xl font-bold tracking-tight font-display" style="color:var(--primary)">Industrial Copilot</span>
+            </div>
+            <p class="text-xs mt-2 text-muted">Universal Document Ingestion &amp; Knowledge Graph Agent</p>
+        </div>
+
+        <div class="panel p-6">
+            <div class="flex mb-5">
+                <div class="auth-tab active" id="tabLogin">Log in</div>
+                <div class="auth-tab" id="tabSignup">Sign up</div>
+            </div>
+
+            <form id="loginForm" class="space-y-3">
+                <div>
+                    <label class="text-xs mono text-muted">EMAIL</label>
+                    <input id="loginEmail" type="email" required class="auth-input mt-1" placeholder="you@company.com">
+                </div>
+                <div>
+                    <label class="text-xs mono text-muted">PASSWORD</label>
+                    <input id="loginPassword" type="password" required class="auth-input mt-1" placeholder="••••••••">
+                </div>
+                <div id="loginError" class="auth-error"></div>
+                <button type="submit" class="btn-primary w-full mt-2"><i class="fas fa-arrow-right-to-bracket mr-1.5"></i> Log in</button>
+                <p class="text-xs text-center mt-2 text-faint">Demo account: <span class="mono">demo@copilot.ai</span> / <span class="mono">demo1234</span></p>
+            </form>
+
+            <form id="signupForm" class="space-y-3 hidden">
+                <div>
+                    <label class="text-xs mono text-muted">FULL NAME</label>
+                    <input id="signupName" type="text" required class="auth-input mt-1" placeholder="Jordan Reyes">
+                </div>
+                <div>
+                    <label class="text-xs mono text-muted">EMAIL</label>
+                    <input id="signupEmail" type="email" required class="auth-input mt-1" placeholder="you@company.com">
+                </div>
+                <div>
+                    <label class="text-xs mono text-muted">PASSWORD</label>
+                    <input id="signupPassword" type="password" required class="auth-input mt-1" placeholder="min. 6 characters">
+                </div>
+                <div>
+                    <label class="text-xs mono text-muted">CONFIRM PASSWORD</label>
+                    <input id="signupConfirm" type="password" required class="auth-input mt-1" placeholder="••••••••">
+                </div>
+                <div id="signupError" class="auth-error"></div>
+                <div id="signupSuccess" class="auth-success"></div>
+                <button type="submit" class="btn-primary w-full mt-2"><i class="fas fa-user-plus mr-1.5"></i> Create account</button>
+            </form>
+        </div>
+        <p class="text-center text-xs mt-4 text-faint">Accounts persist in this browser only, until account/login is connected to the real backend.</p>
+    </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="appShell" class="flex" style="display:none; height:100vh;">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar flex flex-col py-5 px-3">
+        <div class="flex items-center gap-2 px-2 mb-8">
+            <i class="fas fa-diagram-project text-lg" style="color:#fff"></i>
+            <span class="text-lg font-bold font-display" style="color:#fff">Industrial Copilot</span>
+        </div>
+
+        <nav class="flex flex-col gap-1">
+            <div class="sidebar-link active" data-page="dashboard"><i class="fas fa-gauge-high"></i> Dashboard</div>
+            <div class="sidebar-link" data-page="upload"><i class="fas fa-cloud-arrow-up"></i> Upload</div>
+            <div class="sidebar-link" data-page="chat"><i class="fas fa-comment-dots"></i> AI Chat</div>
+            <div class="sidebar-link" data-page="graph"><i class="fas fa-circle-nodes"></i> Knowledge Graph</div>
+            <div class="sidebar-link" data-page="equipment"><i class="fas fa-microchip"></i> Equipment Memory</div>
+            <div class="sidebar-link" data-page="maintenance"><i class="fas fa-screwdriver-wrench"></i> Maintenance</div>
+            <div class="sidebar-link" data-page="compliance"><i class="fas fa-clipboard-check"></i> Compliance</div>
+            <div class="sidebar-link" data-page="analytics"><i class="fas fa-chart-pie"></i> Analytics</div>
+        </nav>
+
+        <div class="flex-1"></div>
+
+        <div class="px-2 pt-4" style="border-top: 1px solid rgba(255,255,255,0.15);">
+            <div class="flex items-center gap-2 text-sm" style="color:#fff;">
+                <i class="far fa-user-circle text-lg"></i>
+                <span id="currentUserLabel" class="truncate">—</span>
+            </div>
+            <button id="logoutBtn" class="btn-ghost w-full mt-3 text-sm" style="background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.25); color:#fff;">
+                <i class="fas fa-right-from-bracket mr-1.5"></i> Log out
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-y-auto p-8">
+
+        <!-- ============ DASHBOARD ============ -->
+        <section id="page-dashboard" class="page visible">
+            <h2 class="text-xl font-bold font-display">Dashboard</h2>
+            <p class="text-sm text-muted mt-1">Project-wide overview across all ingested documents.</p>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="panel p-5">
+                    <div class="flex justify-between"><span class="text-sm text-muted">Schedule Health</span><i class="fas fa-calendar-days" style="color:var(--primary)"></i></div>
+                    <div class="text-2xl font-bold mt-1 mono" id="scheduleHealth">84%</div>
+                </div>
+                <div class="panel p-5">
+                    <div class="flex justify-between"><span class="text-sm text-muted">Open Actions</span><i class="fas fa-list-check" style="color:var(--primary)"></i></div>
+                    <div class="text-2xl font-bold mt-1 mono" id="openActions">24</div>
+                </div>
+                <div class="panel p-5">
+                    <div class="flex justify-between"><span class="text-sm text-muted">Compliance</span><i class="fas fa-shield-halved" style="color:var(--primary)"></i></div>
+                    <div class="text-2xl font-bold mt-1 mono" id="complianceRate">96%</div>
+                </div>
+                <div class="panel p-5">
+                    <div class="flex justify-between"><span class="text-sm text-muted">Documents</span><i class="fas fa-file-lines" style="color:var(--primary)"></i></div>
+                    <div class="text-2xl font-bold mt-1 mono" id="docCount">0</div>
+                </div>
+            </div>
+
+            <div class="panel p-5 mt-4">
+                <h3 class="font-semibold font-display text-sm mb-3"><i class="fas fa-chart-line mr-2" style="color:var(--primary)"></i>Project Progress</h3>
+                <div id="chartWrapper"><canvas id="progressChart"></canvas></div>
+            </div>
+        </section>
+
+        <!-- ============ UPLOAD ============ -->
+        <section id="page-upload" class="page">
+            <h2 class="text-xl font-bold font-display">Upload Documents</h2>
+            <p class="text-sm text-muted mt-1">PDFs, P&amp;IDs, scanned forms, spreadsheets, and email archives feed the knowledge graph and equipment memory automatically.</p>
+
+            <div class="panel p-6 mt-6 max-w-2xl">
+                <div id="uploadZone" class="upload-zone rounded-xl p-10 text-center hover:bg-slate-50 transition cursor-pointer">
+                    <i class="fas fa-cloud-arrow-up text-3xl mb-2 text-faint"></i>
+                    <p class="text-sm font-medium text-muted">Drag &amp; drop or click to browse</p>
+                    <p class="text-xs text-faint mt-1">PDF, DWG, DOCX, XLSX, EML up to 50MB</p>
+                    <input type="file" id="fileInput" multiple class="hidden" accept=".pdf,.dwg,.docx,.xlsx,.eml,.png,.jpg,.txt">
+                    <button id="uploadBtn" class="btn-primary mt-4">Browse files</button>
+                </div>
+                <div id="fileList" class="mt-4 space-y-1 text-xs max-h-56 overflow-y-auto"></div>
+            </div>
+        </section>
+
+        <!-- ============ AI CHAT ============ -->
+        <section id="page-chat" class="page">
+            <h2 class="text-xl font-bold font-display">AI Chat</h2>
+            <p class="text-sm text-muted mt-1">Ask about schedule, compliance, or anything found in ingested documents.</p>
+
+            <div class="panel p-5 mt-6 max-w-2xl flex flex-col" style="height: 480px;">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs bg-green-100 px-2 py-0.5 rounded-full mono" id="chatStatus" style="background:var(--success-soft); color:var(--success)">● online</span>
+                </div>
+                <div id="chatMessages" class="flex-1 overflow-y-auto p-1 text-sm space-y-1">
+                    <div class="chat-bubble"><strong>Copilot:</strong> I see a potential delay in MEP procurement. Review RFQ #204.</div>
+                </div>
+                <div class="flex items-center gap-2 mt-3">
+                    <input id="chatInput" type="text" placeholder="Ask about schedule, compliance..." class="flex-1 rounded-full border px-4 py-2 text-sm outline-none" style="border-color:var(--border-strong); background:var(--bg); color:var(--text);">
+                    <button id="sendChatBtn" class="btn-primary w-9 h-9 rounded-full flex items-center justify-center p-0"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ KNOWLEDGE GRAPH ============ -->
+        <section id="page-graph" class="page">
+            <h2 class="text-xl font-bold font-display">Knowledge Graph</h2>
+            <p class="text-sm text-muted mt-1">Each ingested document gets its own graph. Select a document to view it.</p>
+
+            <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div class="panel p-4">
+                    <h3 class="text-xs font-semibold text-muted mb-3 mono">DOCUMENTS</h3>
+                    <div id="docList" class="space-y-2"></div>
+                    <div id="docListEmpty" class="empty-state mt-2">
+                        <i class="fas fa-file-circle-plus text-2xl mb-2"></i>
+                        <p class="text-sm">No documents yet.</p>
+                        <p class="text-xs mt-1">Upload a document to generate its first graph.</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 panel p-6 flex items-center justify-center" style="min-height: 380px;">
+                    <div id="graphPlaceholder" class="empty-state" style="border:none;">
+                        <i class="fas fa-circle-nodes text-3xl mb-3" style="color:var(--border-strong)"></i>
+                        <p class="text-sm" id="graphPlaceholderText">Select a document on the left to view its knowledge graph.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ EQUIPMENT MEMORY ============ -->
+        <section id="page-equipment" class="page">
+            <h2 class="text-xl font-bold font-display">Equipment Memory</h2>
+            <p class="text-sm text-muted mt-1">Equipment tags extracted from uploaded P&amp;IDs. Select a tag to see where else it's mentioned.</p>
+
+            <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div class="panel p-4">
+                    <h3 class="text-xs font-semibold text-muted mb-3 mono">EQUIPMENT TAGS</h3>
+                    <div id="eqTagList" class="flex flex-wrap gap-2"></div>
+                    <div id="eqTagListEmpty" class="empty-state mt-2">
+                        <i class="fas fa-microchip text-2xl mb-2"></i>
+                        <p class="text-sm">No equipment extracted yet.</p>
+                        <p class="text-xs mt-1">Upload a P&amp;ID to populate this list.</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 panel p-6" style="min-height: 320px;">
+                    <div id="eqDetailEmpty" class="empty-state h-full flex flex-col items-center justify-center" style="border:none; min-height:280px;">
+                        <i class="fas fa-arrow-pointer text-2xl mb-3" style="color:var(--border-strong)"></i>
+                        <p class="text-sm">Select an equipment tag to see its mentions.</p>
+                    </div>
+                    <div id="eqDetail" class="hidden">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-bold font-display mono" id="eqDetailTag">—</span>
+                        </div>
+                        <h4 class="text-xs font-semibold text-muted mt-5 mb-2 mono">MENTIONED IN</h4>
+                        <div id="eqMentions" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ MAINTENANCE ============ -->
+        <section id="page-maintenance" class="page">
+            <h2 class="text-xl font-bold font-display">Maintenance</h2>
+            <p class="text-sm text-muted mt-1">Scheduled and completed maintenance activity.</p>
+            <div class="panel p-5 mt-6 max-w-xl">
+                <ul class="space-y-3 text-sm" id="maintenanceList">
+                    <li class="flex justify-between border-b pb-2" style="border-color:var(--border)"><span>Chiller #2</span> <span class="text-xs" style="color:var(--primary)">in progress</span></li>
+                    <li class="flex justify-between border-b pb-2" style="border-color:var(--border)"><span>UPS Battery</span> <span class="text-xs" style="color:var(--primary)">scheduled</span></li>
+                    <li class="flex justify-between"><span>AHU filter</span> <span class="text-xs" style="color:var(--success)">completed</span></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ============ COMPLIANCE ============ -->
+        <section id="page-compliance" class="page">
+            <h2 class="text-xl font-bold font-display">Compliance</h2>
+            <p class="text-sm text-muted mt-1">Standards and certifications tracked against project documents.</p>
+            <div class="panel p-5 mt-6 max-w-xl">
+                <div class="space-y-2 text-sm" id="complianceList">
+                    <div class="flex items-center gap-2"><i class="fas fa-circle-check" style="color:var(--success)"></i> ISO 9001:2015</div>
+                    <div class="flex items-center gap-2"><i class="fas fa-circle-check" style="color:var(--success)"></i> NEC 2023</div>
+                    <div class="flex items-center gap-2"><i class="fas fa-circle-exclamation" style="color:var(--primary)"></i> LEED v4 — pending</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ ANALYTICS ============ -->
+        <section id="page-analytics" class="page">
+            <h2 class="text-xl font-bold font-display">Analytics</h2>
+            <p class="text-sm text-muted mt-1">Document and workflow metrics.</p>
+            <div class="panel p-5 mt-6 max-w-xl">
+                <div class="flex justify-around items-center">
+                    <div><span class="text-xl font-bold mono" id="analyticsRfi">15</span><span class="text-xs block text-faint">RFIs</span></div>
+                    <div><span class="text-xl font-bold mono" id="analyticsChanges">5</span><span class="text-xs block text-faint">Changes</span></div>
+                    <div><span class="text-xl font-bold mono" id="analyticsOntime">88%</span><span class="text-xs block text-faint">On-time</span></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<script>
+(function() {
+    // ======================================================================
+    // STORAGE — tries localStorage for real persistence; falls back to an
+    // in-memory object if localStorage is unavailable (e.g. inside a
+    // sandboxed preview). When opened as a plain file in an actual browser,
+    // this persists across reloads. Once the real backend is wired up,
+    // this layer is what gets swapped for actual API calls.
+    // ======================================================================
+    const memoryFallback = {};
+    const storage = {
+        get(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (raw !== null) return JSON.parse(raw);
+            } catch (e) { /* localStorage unavailable in this environment */ }
+            return key in memoryFallback ? memoryFallback[key] : fallback;
+        },
+        set(key, value) {
+            memoryFallback[key] = value;
+            try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* falls back to session-only */ }
+        }
+    };
+
+    // ======================================================================
+    // AUTH
+    // ======================================================================
+    let users = storage.get('users', { "demo@copilot.ai": { name: "Demo User", password: "demo1234" } });
+    let currentUser = null;
+
+    const authOverlay = document.getElementById('authOverlay');
+    const appShell = document.getElementById('appShell');
+    const tabLogin = document.getElementById('tabLogin');
+    const tabSignup = document.getElementById('tabSignup');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const loginError = document.getElementById('loginError');
+    const signupError = document.getElementById('signupError');
+    const signupSuccess = document.getElementById('signupSuccess');
+
+    function showTab(which) {
+        loginError.classList.remove('show'); signupError.classList.remove('show'); signupSuccess.classList.remove('show');
+        if (which === 'login') {
+            tabLogin.classList.add('active'); tabSignup.classList.remove('active');
+            loginForm.classList.remove('hidden'); signupForm.classList.add('hidden');
+        } else {
+            tabSignup.classList.add('active'); tabLogin.classList.remove('active');
+            signupForm.classList.remove('hidden'); loginForm.classList.add('hidden');
+        }
+    }
+    tabLogin.addEventListener('click', () => showTab('login'));
+    tabSignup.addEventListener('click', () => showTab('signup'));
+
+    function logIn(email, name) {
+        currentUser = { email, name };
+        document.getElementById('currentUserLabel').innerText = name;
+        authOverlay.style.display = 'none';
+        appShell.style.display = 'flex';
+    }
+
+    loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        loginError.classList.remove('show');
+        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+        const password = document.getElementById('loginPassword').value;
+        const account = users[email];
+        if (!account) { loginError.innerText = "No account found for that email. Try signing up instead."; loginError.classList.add('show'); return; }
+        if (account.password !== password) { loginError.innerText = "Incorrect password."; loginError.classList.add('show'); return; }
+        logIn(email, account.name);
+    });
+
+    signupForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        signupError.classList.remove('show'); signupSuccess.classList.remove('show');
+        const name = document.getElementById('signupName').value.trim();
+        const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+        const password = document.getElementById('signupPassword').value;
+        const confirm = document.getElementById('signupConfirm').value;
+
+        if (!name || !email || !password) { signupError.innerText = "Please fill in every field."; signupError.classList.add('show'); return; }
+        if (users[email]) { signupError.innerText = "An account with this email already exists. Log in instead."; signupError.classList.add('show'); return; }
+        if (password.length < 6) { signupError.innerText = "Password must be at least 6 characters."; signupError.classList.add('show'); return; }
+        if (password !== confirm) { signupError.innerText = "Passwords don't match."; signupError.classList.add('show'); return; }
+
+        users[email] = { name, password };
+        storage.set('users', users);
+        signupSuccess.innerText = "Account created — logging you in...";
+        signupSuccess.classList.add('show');
+        setTimeout(() => logIn(email, name), 500);
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        currentUser = null;
+        appShell.style.display = 'none';
+        authOverlay.style.display = 'flex';
+        loginForm.reset(); signupForm.reset();
+        showTab('login');
+    });
+
+    // ======================================================================
+    // SIDEBAR NAVIGATION
+    // ======================================================================
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.addEventListener('click', () => {
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
+            document.getElementById('page-' + link.dataset.page).classList.add('visible');
+        });
+    });
+
+    // ======================================================================
+    // MAIN APP
+    // ======================================================================
+    const API_BASE = "http://localhost:8000";
+
+    // ---------- CHART ----------
+    const ctx = document.getElementById('progressChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['W1','W2','W3','W4','W5','W6'],
+            datasets: [
+                { label: 'Planned', data: [30,40,50,60,70,80], borderColor:'#B8D8E3', borderDash:[4,4], tension:0.2, pointRadius:2 },
+                { label: 'Actual', data: [28,38,48,58,72,84], borderColor:'#0096C7', backgroundColor:'rgba(0,150,199,0.08)', fill:true, tension:0.2, pointRadius:3 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color:'#EAF4F8' }, ticks: { color:'#547886' } },
+                x: { grid: { display:false }, ticks: { color:'#547886' } }
+            }
+        }
+    });
+
+    function updateDashboard() {
+        document.getElementById('docCount').innerText = documents.length;
+        document.getElementById('openActions').innerText = Math.floor(Math.random() * 10 + 18);
+        document.getElementById('scheduleHealth').innerText = (80 + Math.floor(Math.random() * 10)) + '%';
+        document.getElementById('complianceRate').innerText = (94 + Math.floor(Math.random() * 5)) + '%';
+        document.getElementById('analyticsRfi').innerText = Math.floor(Math.random() * 8 + 8);
+        document.getElementById('analyticsChanges').innerText = Math.floor(Math.random() * 6 + 4);
+        document.getElementById('analyticsOntime').innerText = (88 + Math.floor(Math.random() * 10)) + '%';
+    }
+
+    // ======================================================================
+    // DOCUMENTS — drives both the Knowledge Graph list and Equipment Memory
+    // ======================================================================
+    let documents = storage.get('documents', []);
+    let docCounter = storage.get('docCounter', 0);
+    let equipmentTags = storage.get('equipmentTags', {}); // { 'P-101': [{docId, docName}, ...] }
+
+    // Equipment tags a real extraction pipeline might return from a P&ID —
+    // used here only to simulate what gets populated per upload, since
+    // there's no backend yet.
+    const equipmentPool = ['P-101','P-102','HX-204','V-303','T-501','PU-210','E-115','FCV-88','LT-12'];
+
+    function persistDocs() { storage.set('documents', documents); storage.set('docCounter', docCounter); }
+    function persistEquipment() { storage.set('equipmentTags', equipmentTags); }
+
+    function registerDocument(filename) {
+        docCounter += 1;
+        const doc = { id: 'DOC-' + String(docCounter).padStart(3, '0'), name: filename, addedAt: new Date().toLocaleString() };
+        documents.push(doc);
+        persistDocs();
+
+        // Simulated extraction — placeholder for the real ingestion pipeline
+        const pickCount = 1 + Math.floor(Math.random() * 3);
+        const picked = new Set();
+        while (picked.size < pickCount) picked.add(equipmentPool[Math.floor(Math.random() * equipmentPool.length)]);
+        picked.forEach(tag => {
+            if (!equipmentTags[tag]) equipmentTags[tag] = [];
+            equipmentTags[tag].push({ docId: doc.id, docName: doc.name });
+        });
+        persistEquipment();
+
+        renderDocList();
+        renderEquipmentTags();
+        updateDashboard();
+        return doc;
+    }
+
+    // ---------- KNOWLEDGE GRAPH PAGE ----------
+    function renderDocList() {
+        const list = document.getElementById('docList');
+        const empty = document.getElementById('docListEmpty');
+        list.innerHTML = '';
+        empty.style.display = documents.length ? 'none' : 'block';
+
+        documents.slice().reverse().forEach(doc => {
+            const row = document.createElement('div');
+            row.className = 'list-row';
+            row.dataset.docId = doc.id;
+            row.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-semibold mono">${doc.id}</span>
+                    <i class="fas fa-chevron-right text-xs text-faint"></i>
+                </div>
+                <div class="text-xs text-muted mt-1 truncate">${doc.name}</div>
+            `;
+            row.addEventListener('click', () => selectDocument(doc.id));
+            list.appendChild(row);
+        });
+    }
+
+    function selectDocument(docId) {
+        document.querySelectorAll('#docList .list-row').forEach(r => r.classList.toggle('active', r.dataset.docId === docId));
+        const doc = documents.find(d => d.id === docId);
+        document.getElementById('graphPlaceholder').innerHTML = `
+            <i class="fas fa-circle-nodes text-3xl mb-3" style="color:var(--primary)"></i>
+            <p class="text-sm font-semibold">${doc.id} — ${doc.name}</p>
+            <p class="text-xs text-faint mt-1">Knowledge graph will render here once generated by the backend.</p>
+        `;
+    }
+
+    // ---------- EQUIPMENT MEMORY PAGE ----------
+    function renderEquipmentTags() {
+        const list = document.getElementById('eqTagList');
+        const empty = document.getElementById('eqTagListEmpty');
+        list.innerHTML = '';
+        const tags = Object.keys(equipmentTags);
+        empty.style.display = tags.length ? 'none' : 'block';
+
+        tags.forEach(tag => {
+            const chip = document.createElement('div');
+            chip.className = 'chip';
+            chip.dataset.tag = tag;
+            chip.innerText = tag;
+            chip.addEventListener('click', () => selectEquipment(tag));
+            list.appendChild(chip);
+        });
+    }
+
+    function selectEquipment(tag) {
+        document.querySelectorAll('#eqTagList .chip').forEach(c => c.classList.toggle('active', c.dataset.tag === tag));
+        document.getElementById('eqDetailEmpty').classList.add('hidden');
+        document.getElementById('eqDetail').classList.remove('hidden');
+        document.getElementById('eqDetailTag').innerText = tag;
+
+        const mentionsEl = document.getElementById('eqMentions');
+        mentionsEl.innerHTML = equipmentTags[tag].map(m => `
+            <div class="list-row" style="cursor:default;">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-file-lines" style="color:var(--primary)"></i>
+                    <span class="text-sm">${m.docName}</span>
+                </div>
+                <div class="text-xs text-faint mt-1 mono">${m.docId}</div>
+            </div>
+        `).join('');
+    }
+
+    // ---------- UPLOAD ----------
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+
+    async function handleFiles(files) {
+        for (const file of files) {
+            // Frontend bookkeeping happens immediately — independent of the
+            // backend call below, since document numbering / equipment
+            // extraction is UI structure only for now.
+            const doc = registerDocument(file.name);
+
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `<span>${doc.id} · ${file.name}</span><span class="status processing">Uploading...</span>`;
+            fileList.prepend(item);
+
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const response = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
+                if (!response.ok) throw new Error(`Server responded ${response.status}`);
+                const data = await response.json();
+                item.querySelector('.status').outerHTML = '<span class="status uploaded">Uploaded</span>';
+                addChatMessage('Copilot', data.message || `Processed ${file.name}.`);
+            } catch (error) {
+                item.querySelector('.status').outerHTML = '<span class="status error">Backend unreachable</span>';
+                console.error('Upload error:', error);
+            }
+        }
+    }
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => { e.preventDefault(); uploadZone.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
+    fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleFiles(e.target.files); fileInput.value = ''; });
+    document.getElementById('uploadBtn').addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+
+    // ---------- AI CHAT ----------
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendChatBtn');
+
+    async function askAI(question) {
+        try {
+            const response = await fetch(`${API_BASE}/chat`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question })
+            });
+            if (!response.ok) throw new Error(`Server responded ${response.status}`);
+            const data = await response.json();
+            return { text: data.reply || data.message || "I don't have a response for that yet.", isError: false };
+        } catch (error) {
+            console.error('Chat error:', error);
+            return { text: '⚠ Couldn\'t reach the AI service. Check that the backend is running at ' + API_BASE + '.', isError: true };
+        }
+    }
+
+    function addChatMessage(sender, text, isError = false) {
+        const div = document.createElement('div');
+        div.className = `chat-bubble ${sender === 'You' ? 'user' : ''} ${isError ? 'error' : ''}`;
+        div.innerHTML = sender === 'You' ? `<strong>You:</strong> ${text}` : `<strong>Copilot:</strong> ${text}`;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    async function sendUserMessage(msg) {
+        addChatMessage('You', msg);
+        const status = document.getElementById('chatStatus');
+        status.innerHTML = '● thinking...'; status.style.background = 'var(--primary-soft-strong)'; status.style.color = 'var(--primary)';
+
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'typing-indicator';
+        typingDiv.innerHTML = '<span></span><span></span><span></span>';
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const { text, isError } = await askAI(msg);
+        chatMessages.removeChild(typingDiv);
+        addChatMessage('Copilot', text, isError);
+        status.innerHTML = '● online'; status.style.background = 'var(--success-soft)'; status.style.color = 'var(--success)';
+    }
+
+    sendBtn.addEventListener('click', () => {
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+        chatInput.value = '';
+        sendUserMessage(msg);
+    });
+    chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendBtn.click(); });
+
+    // ---------- INITIAL RENDER ----------
+    renderDocList();
+    renderEquipmentTags();
+    updateDashboard();
+
+    console.log('Industrial Copilot · sidebar interface loaded');
+})();
+</script>
+
+</body></html>
